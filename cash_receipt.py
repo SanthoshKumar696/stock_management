@@ -18,7 +18,6 @@ from day_book import day_book
 conn = sqlite3.connect('stock.db')
 cursor = conn.cursor()
 
-
 # Function to handle exit menu action
 def exit_program():
     root.quit()
@@ -55,7 +54,26 @@ def update_sub_products(event):
         sub_product_combo['values'] = []
         sub_product_combo.set("")
 
-
+# Transactions table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS saved_data (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT NOT NULL,
+        name TEXT,
+        "transaction" TEXT,
+        main_product TEXT NOT NULL,
+        sub_product TEXT NOT NULL,
+        gross_wt REAL NOT NULL,
+        stones INTEGER,
+        touch REAL,
+        net_wt REAL NOT NULL,
+        mc_at REAL,
+        mc REAL,
+        rate REAL NOT NULL,
+        amount REAL NOT NULL,
+        narration TEXT
+    )
+    """)
 
 
 # Functionality for buttons
@@ -79,8 +97,32 @@ def add_item():
     if name and transaction and gross_wt:
         tree.insert("", "end", values=(sl_no, date, name,main_product,sub_product, transaction, gross_wt, stones, touch, net_wt, mc_at, mc, rate, amount, narration))
         clear_fields()
+
     else:
         messagebox.showerror("Input Error", "Please fill all required fields.")
+
+    try:
+        amount = float(amount)
+        cursor.execute("""
+        INSERT INTO saved_data (date, "transaction", name, main_product, sub_product, gross_wt, stones, touch, net_wt, mc_at, mc, rate, amount, narration)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (date,transaction,name, main_product, sub_product, gross_wt, stones, touch, net_wt, mc_at, mc, rate, amount,narration))
+        conn.commit()
+        messagebox.showinfo("Success", 
+                            f"Date : {date},\nTransaction : {transaction}, \nCustomer Name : {name}, \nMain Product : {main_product}, \nSub Product : {sub_product}, \nGross Wt : {gross_wt}, \nStones : {stones}, \nTouch : {touch}, \nNetWt : {net_wt}, \nMC@ : {mc_at}, \nMC : {mc}, \nRate : {rate}, \nAmount : {amount}, \nNarration : {narration}\n"
+                            "Receipt saved successfully!")
+        
+        
+        # Clear input fields
+        date_entry.delete(0, tk.END)
+        name.delete(0, tk.END)
+        amount_entry.delete(0, tk.END)
+        main_product_combo.set("")
+        sub_product_combo.set("")
+    except ValueError:
+        messagebox.showerror("Input Error", "Amount must be a number!")
+    except sqlite3.Error as e:
+        messagebox.showerror("Database Error", f"Error: {e}")
 
 def delete_item():
     selected_item = tree.selection()
@@ -141,7 +183,6 @@ menu_bar.add_cascade(label="Report", menu=report_menu)
 menu_bar.add_cascade(label="Utility", menu=utility_menu)
 menu_bar.add_cascade(label="Exit", menu=exit_menu)
 
-
 #Master #### Adding submenu of master menu
 master_menu.add_command(label="Main Ledger", command=lambda:open_main_ledger(root))
 master_menu.add_command(label="Sub Ledger", command=lambda:open_sub_ledger(root))
@@ -192,7 +233,6 @@ main_product_combo = ttk.Combobox(middle_frame, values=fetch_main_ledger(), stat
 main_product_combo.grid(row=0, column=1, padx=5)
 main_product_combo.bind("<<ComboboxSelected>>",update_sub_products)
 
-
 tk.Label(middle_frame, text="Sub Product:", bg="lightpink", font=("Arial", 10)).grid(row=0, column=2, padx=5)
 sub_product_combo = ttk.Combobox(middle_frame, state="readonly", width=20)
 sub_product_combo.grid(row=0, column=3, padx=5)
@@ -204,7 +244,6 @@ gross_wt_entry.grid(row=0, column=5, padx=5)
 tk.Label(middle_frame, text="Stones:", bg="lightpink", font=("Arial", 10)).grid(row=0, column=6, padx=5)
 stones_entry = tk.Entry(middle_frame, width=10)
 stones_entry.grid(row=0, column=7, padx=5)
-
 
 # Bottom Frame - Row 3: Additional Details
 bottom_frame = tk.Frame(root, bg="lightpink")
