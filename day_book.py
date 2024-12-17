@@ -18,7 +18,7 @@ def fetch_transactions(cursor, from_date, to_date):
 
         cursor.execute(
             "SELECT * FROM saved_data WHERE date BETWEEN ? AND ? ORDER BY date",
-            (from_date_obj, to_date_obj)
+            (from_date, to_date)
         )
         rows = cursor.fetchall()
         return rows
@@ -54,7 +54,7 @@ def day_book(root):
 
             # Define TreeView columns
             columns = (
-                "ID", "Date", "Transaction", "Party Name", "Main Product", "Sub Product",
+                "ID", "Date", "Party Name", "Transaction", "Main Product", "Sub Product",
                 "Gross Wt", "Stones", "Touch", "Net Wt", "MC@", "MC", "Rate", "Amount", "Narration"
             )
             tree = ttk.Treeview(report_window, columns=columns, show="headings")
