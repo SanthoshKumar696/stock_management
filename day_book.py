@@ -60,7 +60,7 @@ def day_book(root):
             tree = ttk.Treeview(report_window, columns=columns, show="headings")
             for col in columns:
                 tree.heading(col, text=col)
-                tree.column(col, width=100)
+                tree.column(col, width=1)
 
             # Insert data into the TreeView
             for row in transactions:

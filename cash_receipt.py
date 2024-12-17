@@ -74,6 +74,27 @@ def update_sub_products(event):
         narration TEXT
     )
     """)
+# Function to calculate Net Weight
+def calculate_net_wt(event=None):  # 'event' is needed for binding
+    try:
+        # Fetch input values
+        gross_wt = float(gross_wt_entry.get()) if gross_wt_entry.get() else 0.0
+        stones = float(stones_entry.get()) if stones_entry.get() else 0.0
+        touch = float(touch_entry.get()) if touch_entry.get() else 0.0
+        
+        # Perform the calculation
+        adjusted_wt = gross_wt - stones
+        net_wt = adjusted_wt * (touch / 100)
+        
+        # Insert the calculated value into net_wt_entry
+        net_wt_entry.delete(0, tk.END)  # Clear existing value
+        net_wt_entry.insert(0, f"{net_wt:.2f}")  # Insert new value with 2 decimal places
+        
+    except ValueError:
+        messagebox.showerror("Input Error", "Please enter valid numbers for Gross Wt, Stones, and Touch.")
+
+# Bind the Enter key to the Touch entry field
+
 
 
 # Functionality for buttons
@@ -84,18 +105,25 @@ def add_item():
     transaction = transaction_combo.get()
     main_product = main_product_combo.get()
     sub_product = sub_product_combo.get()
-    gross_wt = gross_wt_entry.get()
-    stones = stones_entry.get()
-    touch = touch_entry.get()
-    net_wt = net_wt_entry.get()
+    gross_wt = float(gross_wt_entry.get())
+    stones = float(stones_entry.get())
+    touch = float(touch_entry.get())
+    
     mc_at = mc_at_entry.get()
     mc = mc_entry.get()
     rate = rate_entry.get()
     amount = amount_entry.get()
     narration = narration_entry.get()
 
-    if name and transaction and gross_wt:
-        tree.insert("", "end", values=(sl_no, date, name,main_product,sub_product, transaction, gross_wt, stones, touch, net_wt, mc_at, mc, rate, amount, narration))
+    if not gross_wt and touch:
+        messagebox.error("Input Error", "Please enter Gross Wt and Touch")
+        return 
+    
+    adjusted_wt=gross_wt-stones
+    net_wt=adjusted_wt*(touch/100)
+
+    if name and transaction :
+        tree.insert("", "end", values=(sl_no, date, name,main_product,sub_product, transaction, gross_wt, stones, touch, f"{net_wt:.2f}", mc_at, mc, rate, amount, narration))
         clear_fields()
 
     else:
@@ -252,6 +280,7 @@ bottom_frame.pack(pady=5)
 tk.Label(bottom_frame, text="Touch:", bg="lightpink", font=("Arial", 10)).grid(row=0, column=0, padx=5)
 touch_entry = tk.Entry(bottom_frame, width=10)
 touch_entry.grid(row=0, column=1, padx=5)
+touch_entry.bind("<Return>", calculate_net_wt)
 
 tk.Label(bottom_frame, text="Net Wt:", bg="lightpink", font=("Arial", 10)).grid(row=0, column=2, padx=5)
 net_wt_entry = tk.Entry(bottom_frame, width=10)
