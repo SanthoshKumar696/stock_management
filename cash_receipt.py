@@ -109,8 +109,8 @@ def add_item():
         """, (date,transaction,name, main_product, sub_product, gross_wt, stones, touch, net_wt, mc_at, mc, rate, amount,narration))
         conn.commit()
         messagebox.showinfo("Success", 
-                            f"Date : {date},\nTransaction : {transaction}, \nCustomer Name : {name}, \nMain Product : {main_product}, \nSub Product : {sub_product}, \nGross Wt : {gross_wt}, \nStones : {stones}, \nTouch : {touch}, \nNetWt : {net_wt}, \nMC@ : {mc_at}, \nMC : {mc}, \nRate : {rate}, \nAmount : {amount}, \nNarration : {narration}\n"
-                            "Receipt saved successfully!")
+                f"Date : {date},\nTransaction : {transaction}, \nCustomer Name : {name}, \nMain Product : {main_product}, \nSub Product : {sub_product}, \nGross Wt : {gross_wt}, \nStones : {stones}, \nTouch : {touch}, \nNetWt : {net_wt}, \nMC@ : {mc_at}, \nMC : {mc}, \nRate : {rate}, \nAmount : {amount}, \nNarration : {narration}\n"
+                    "Receipt saved successfully!")
         
         
         # Clear input fields
@@ -299,7 +299,6 @@ tree.heading("#12", text="MC")
 tree.heading("#13", text="Rate")
 tree.heading("#14", text="Amount")
 tree.heading("#15", text="Narration")
-
 
 tree.column("#1", width=30, anchor=tk.CENTER)
 tree.column("#2", width=50, anchor=tk.CENTER)
