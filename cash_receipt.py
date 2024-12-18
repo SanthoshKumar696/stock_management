@@ -74,6 +74,8 @@ def update_sub_products(event):
         narration TEXT
     )
     """)
+
+
 # Function to calculate Net Weight
 def calculate_net_wt(event=None):  # 'event' is needed for binding
     try:
@@ -88,14 +90,23 @@ def calculate_net_wt(event=None):  # 'event' is needed for binding
         
         # Insert the calculated value into net_wt_entry
         net_wt_entry.delete(0, tk.END)  # Clear existing value
-        net_wt_entry.insert(0, f"{net_wt:.2f}")  # Insert new value with 2 decimal places
+        net_wt_entry.insert(0, net_wt)  # Insert new value with 2 decimal places
         
     except ValueError:
         messagebox.showerror("Input Error", "Please enter valid numbers for Gross Wt, Stones, and Touch.")
 
 # Bind the Enter key to the Touch entry field
 
+# Function to calculate Amount 
+def calculate_amount(event=None):
+    rate=float(rate_entry.get()) if rate_entry.get() else 0.0
+    net_wt=float(net_wt_entry.get()) if net_wt_entry.get() else 0.0
 
+    amount=net_wt*rate 
+
+    amount_entry.delete(0, tk.END)
+    amount_entry.insert(0,amount)
+    #################################################################################################
 
 # Functionality for buttons
 def add_item():
@@ -108,11 +119,11 @@ def add_item():
     gross_wt = float(gross_wt_entry.get())
     stones = float(stones_entry.get())
     touch = float(touch_entry.get())
-    
+
     mc_at = mc_at_entry.get()
     mc = mc_entry.get()
-    rate = rate_entry.get()
-    amount = amount_entry.get()
+    rate = float(rate_entry.get())
+    
     narration = narration_entry.get()
 
     if not gross_wt and touch:
@@ -122,8 +133,13 @@ def add_item():
     adjusted_wt=gross_wt-stones
     net_wt=adjusted_wt*(touch/100)
 
+    if not rate:
+        messagebox.error("Input Error", "Please enter Rate")
+        return 
+    amount=net_wt*rate
+
     if name and transaction :
-        tree.insert("", "end", values=(sl_no, date, name,main_product,sub_product, transaction, gross_wt, stones, touch, f"{net_wt:.2f}", mc_at, mc, rate, amount, narration))
+        tree.insert("", "end", values=(sl_no, date, name, main_product, sub_product, transaction, gross_wt, stones, touch,net_wt, mc_at, mc, rate, amount, narration))
         clear_fields()
 
     else:
@@ -142,7 +158,7 @@ def add_item():
         
         
         # Clear input fields
-        date_entry.delete(0, tk.END)
+        
         name.delete(0, tk.END)
         amount_entry.delete(0, tk.END)
         main_product_combo.set("")
@@ -297,6 +313,7 @@ mc_entry.grid(row=0, column=7, padx=5)
 tk.Label(bottom_frame, text="Rate:", bg="lightpink", font=("Arial", 10)).grid(row=1, column=0, padx=5)
 rate_entry = tk.Entry(bottom_frame, width=10)
 rate_entry.grid(row=1, column=1, padx=5)
+rate_entry.bind("<Return>", calculate_amount)
 
 tk.Label(bottom_frame, text="Amount:", bg="lightpink", font=("Arial", 10)).grid(row=1, column=2, padx=5)
 amount_entry = tk.Entry(bottom_frame, width=10)
