@@ -168,12 +168,28 @@ def add_item():
     except sqlite3.Error as e:
         messagebox.showerror("Database Error", f"Error: {e}")
 
+# Function to delete an item from the treeview and database
 def delete_item():
-    selected_item = tree.selection()
+    selected_item = tree.selection()  # Get the selected item from TreeView
     if selected_item:
-        tree.delete(selected_item)
+        # Get the 'id' from the selected item
+        item_values = tree.item(selected_item, 'values')  # Retrieve all values of the selected item
+        date = item_values[0]  # Example: Using date to identify, modify for your unique identifier
+        main_product = item_values[3]
+
+        try:
+            # Delete from database
+            cursor.execute("DELETE FROM saved_data WHERE date=? and main_product=?", (date,main_product))
+            conn.commit()
+
+            # Delete from TreeView
+            tree.delete(selected_item)
+            messagebox.showinfo("Success", "Item deleted successfully!")
+        except sqlite3.Error as e:
+            messagebox.showerror("Database Error", f"An error occurred: {e}")
     else:
-        messagebox.showerror("Selection Error", "Please select an item to delete.")
+        messagebox.showerror("Selection Error", "Select an item to delete.")
+
 
 def clear_fields():
     party_entry.delete(0, tk.END)
@@ -250,6 +266,22 @@ exit_menu.add_command(label="Exit", command=exit_program)
 
 cash_receipt_label = tk.Label(root, text="Cash Receipt", font=("Arial", 14, "bold"), bg="lightpink", fg="red")
 cash_receipt_label.pack(pady=10)
+
+###################################################################################################################################
+# radio buttons for CRUD Operations                                                                                               #
+button_frame = tk.Frame(root, bg="lightpink")                                                                                     #
+button_frame.pack(pady=5)                                                                                                         #
+                                                                                                                                  #
+add_rd=tk.Radiobutton(button_frame, text="Addition",bg="lightpink",font=("roboto",12,"bold"), command="addition")                 #
+add_rd.grid(row=0, column=1)  
+                                                                                                                                  #
+correction_button=tk.Radiobutton(button_frame, text="Correction",bg="lightpink",font=("roboto",12,"bold"), command="correction")  #
+correction_button.grid(row=0, column=3)
+                                                                                                                                  #
+deletion_button=tk.Radiobutton(button_frame, text="Deletion",bg="lightpink",font=("roboto",12,"bold"), command="deletion")        #
+deletion_button.grid(row=0, column=9)                                                                                             #
+###################################################################################################################################
+
 
 # Top Frame - Row 1: Basic Details
 top_frame = tk.Frame(root, bg="lightpink")
@@ -366,7 +398,7 @@ tree.pack(fill="both", expand=True)
 
 # Footer Frame - Buttons
 footer_frame = tk.Frame(root, bg="lightpink")
-footer_frame.pack(pady=10)
+footer_frame.pack(pady=20)
 
 tk.Button(footer_frame, text="Add", width=12, bg="green", fg="white", command=add_item).grid(row=0, column=0, padx=10)
 tk.Button(footer_frame, text="Delete", width=12, bg="red", fg="white", command=delete_item).grid(row=0, column=1, padx=10)
