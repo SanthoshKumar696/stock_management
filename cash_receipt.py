@@ -101,8 +101,9 @@ def calculate_net_wt(event=None):  # 'event' is needed for binding
 def calculate_amount(event=None):
     rate=float(rate_entry.get()) if rate_entry.get() else 0.0
     net_wt=float(net_wt_entry.get()) if net_wt_entry.get() else 0.0
+    mc=float(mc_entry.get()) if mc_entry.get() else 0.0
 
-    amount=net_wt*rate 
+    amount=(net_wt*rate)+(net_wt*mc) 
 
     amount_entry.delete(0, tk.END)
     amount_entry.insert(0,amount)
