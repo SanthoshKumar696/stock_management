@@ -111,7 +111,9 @@ def calculate_amount(event=None):
 
 # Functionality for buttons
 def add_item():
-    sl_no = len(tree.get_children()) + 1
+    cursor.execute("select max(ID) from saved_data")
+    max_id = cursor.fetchone()[0]
+    sl_no = (max_id+1) if max_id else 1
     date = date_entry.get()
     name = party_entry.get()
     transaction = transaction_combo.get()
@@ -174,13 +176,12 @@ def delete_item():
     selected_item = tree.selection()  # Get the selected item from TreeView
     if selected_item:
         # Get the 'id' from the selected item
-        item_values = tree.item(selected_item, 'values')  # Retrieve all values of the selected item
-        date = item_values[0]  # Example: Using date to identify, modify for your unique identifier
-        main_product = item_values[3]
+        item_values = tree.item(selected_item, 'values')
+        record_id = item_values[0]
 
         try:
             # Delete from database
-            cursor.execute("DELETE FROM saved_data WHERE date=? and main_product=?", (date,main_product))
+            cursor.execute("DELETE FROM saved_data WHERE id=?", (record_id,))
             conn.commit()
 
             # Delete from TreeView
@@ -191,6 +192,25 @@ def delete_item():
     else:
         messagebox.showerror("Selection Error", "Select an item to delete.")
 
+# Correction Or Update an item for tree view and database
+def correction_item():
+    selected_item=tree.selection()
+    if selected_item:
+        #Get the "ID" from the selected item
+        item_values=tree.item(selected_item,'values')
+        record_id=item_values[0]
+
+        try:
+            # Update from Database
+            cursor.execute("update saved_data SET   WHERE id=?",(record_id,))
+            conn.commit()
+
+            #Update data from TreeView
+        except sqlite3.Error as e:
+            messagebox.showerror("Database Error", f"An error occurred:{e}")
+    else:
+        messagebox.showerror("Selection Error", "Select an item to Update")
+# Completed the Update Data or correction_item function as Ended
 
 def clear_fields():
     party_entry.delete(0, tk.END)
@@ -404,6 +424,7 @@ footer_frame.pack(pady=20)
 tk.Button(footer_frame, text="Add", width=12, bg="green", fg="white", command=add_item).grid(row=0, column=0, padx=10)
 tk.Button(footer_frame, text="Delete", width=12, bg="red", fg="white", command=delete_item).grid(row=0, column=1, padx=10)
 tk.Button(footer_frame, text="Save", width=12, bg="blue", fg="white", command=save_items).grid(row=0, column=2, padx=10)
+tk.Button(footer_frame, text="Correction", width=12, bg="purple", fg="white", command=correction_item).grid(row=0,column=3, padx=10)
 
 # Run the application
 root.mainloop()
