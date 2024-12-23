@@ -60,7 +60,7 @@ def update_sub_products(event):
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         date TEXT NOT NULL,
         name TEXT,
-        "transaction" TEXT,
+        transaction TEXT,
         main_product TEXT NOT NULL,
         sub_product TEXT NOT NULL,
         gross_wt REAL NOT NULL,
@@ -94,7 +94,6 @@ def calculate_net_wt(event=None):  # 'event' is needed for binding
         
     except ValueError:
         messagebox.showerror("Input Error", "Please enter valid numbers for Gross Wt, Stones, and Touch.")
-
 # Bind the Enter key to the Touch entry field
 
 # Function to calculate Amount 
@@ -107,7 +106,7 @@ def calculate_amount(event=None):
 
     amount_entry.delete(0, tk.END)
     amount_entry.insert(0,amount)
-    #################################################################################################
+    ############################################################
 
 # Functionality for buttons
 def add_item():
@@ -151,7 +150,7 @@ def add_item():
     try:
         amount = float(amount)
         cursor.execute("""
-        INSERT INTO saved_data (date, "transaction", name, main_product, sub_product, gross_wt, stones, touch, net_wt, mc_at, mc, rate, amount, narration)
+        INSERT INTO saved_data (date, transaction, name, main_product, sub_product, gross_wt, stones, touch, net_wt, mc_at, mc, rate, amount, narration)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (date,transaction,name, main_product, sub_product, gross_wt, stones, touch, net_wt, mc_at, mc, rate, amount,narration))
         conn.commit()
@@ -195,23 +194,101 @@ def delete_item():
 # Correction Or Update an item for tree view and database
 def correction_item():
     selected_item=tree.selection()
-    if selected_item:
-        #Get the "ID" from the selected item
-        item_values=tree.item(selected_item,'values')
-        record_id=item_values[0]
+    if not selected_item:
+        messagebox.showwarning("No Selection", "Please select a record to modify.")
+        return
+    
+    record= tree.item(selected_item[0],"values")
+    global selected_id 
+    selected_id=record[0]
+    
 
-        try:
-            # Update from Database
-            cursor.execute("update saved_data SET   WHERE id=?",(record_id,))
-            conn.commit()
+    
+    # Populate fields with the selected record's data
+    date_entry.delete(0, tk.END)
+    date_entry.insert(0, record[1])  # Date
+    transaction_combo.set(record[5])  # Transaction
+    party_entry.delete(0, tk.END)
+    party_entry.insert(0, record[2])  # Party Name
+    main_product_combo.set(record[3])  # Main Product
+    sub_product_combo.set(record[4])  # Sub Product
+    gross_wt_entry.delete(0, tk.END)
+    gross_wt_entry.insert(0, record[6])  # Gross Weight
+    stones_entry.delete(0, tk.END)
+    stones_entry.insert(0, record[7])  # Stones
+    touch_entry.delete(0, tk.END)
+    touch_entry.insert(0, record[8])  # Touch
+    net_wt_entry.delete(0, tk.END)
+    net_wt_entry.insert(0, record[9])  # Net Weight
+    mc_at_entry.delete(0, tk.END)
+    mc_at_entry.insert(0, record[10])  # MC@
+    mc_entry.delete(0, tk.END)
+    mc_entry.insert(0, record[11])  # MC
+    rate_entry.delete(0, tk.END)
+    rate_entry.insert(0, record[12])  # Rate
+    amount_entry.delete(0, tk.END)
+    amount_entry.insert(0, record[13])  # Amount
+    narration_entry.delete(0, tk.END)
+    narration_entry.insert(0, record[14])  # Narration
 
-            #Update data from TreeView
-        except sqlite3.Error as e:
-            messagebox.showerror("Database Error", f"An error occurred:{e}")
-    else:
-        messagebox.showerror("Selection Error", "Select an item to Update")
+    correction_button.config(text="Update", command=update_item)
+
+
+    conn=sqlite3.connect('stock.db')
+    conn.cursor()
+    cursor.execute('UPDATE saved_data SET date=?, name=?, transaction=?, main_product=?, sub_product=?, gross_wt=?, stones=?, touch=?, net_wt=?, mc_at=?, mc=?, rate=?, amount=?, narration=? WHERE id=?', (date_entry, party_entry, transaction_combo, main_product_combo, sub_product_combo,gross_wt_entry, stones_entry, touch_entry, mc_at_entry, mc_entry, rate_entry, amount_entry, narration_entry, selected_id))
+    conn.commit()
+    conn.close()
+    # save the selected item's ID for further updates
+
+def update_item():
+    # Fetch updated values from entry fields
+    updated_values=(
+        date_entry.get(),
+        party_entry.get(),
+        transaction_combo.get(),
+        main_product_combo.get(),
+        sub_product_combo.get(),
+        gross_wt_entry.get(),
+        stones_entry.get(),
+        touch_entry.get(),
+        net_wt_entry.get(),
+        mc_at_entry.get(),
+        mc_entry.get(),
+        rate_entry.get(),
+        amount_entry.get(),
+        narration_entry.get(),
+        selected_id,
+    )  
+
+    try:
+        conn=sqlite3.connect('stock.db')
+        cursor=conn.cursor()
+        cursor.execute(
+            """
+                UPDATE saved_data SET date=?, name=?, transaction=?, 
+                main_product=?, sub_product=?, gross_wt=?, stones=?, 
+                touch=?, net_wt=?, mc_at=?, mc=?, rate=?, amount=?, 
+                narration=?
+                WHERE id=?
+            """, updated_values
+        )
+        conn.commit() 
+
+        # Update the tree view item 
+        tree.item(selected_id, values=updated_values[:-1])
+
+        messagebox.showinfo("Success", "Record updated successfully.")
+
+        #Reset the button text to 'Correction'
+        correction_button.config(text='Correction', command=correction_item)
+    except Exception as e:
+        messagebox.showerror('Error',f'Failed to update record: {e}')
+    finally:
+        conn.close()
+
+
 # Completed the Update Data or correction_item function as Ended
-
 def clear_fields():
     party_entry.delete(0, tk.END)
     gross_wt_entry.delete(0, tk.END)
@@ -288,20 +365,7 @@ exit_menu.add_command(label="Exit", command=exit_program)
 cash_receipt_label = tk.Label(root, text="Cash Receipt", font=("Arial", 14, "bold"), bg="lightpink", fg="red")
 cash_receipt_label.pack(pady=10)
 
-###################################################################################################################################
-# radio buttons for CRUD Operations                                                                                               #
-button_frame = tk.Frame(root, bg="lightpink")                                                                                     #
-button_frame.pack(pady=5)                                                                                                         #
-                                                                                                                                  #
-add_rd=tk.Radiobutton(button_frame, text="Addition",bg="lightpink",font=("roboto",12,"bold"), command="addition")                 #
-add_rd.grid(row=0, column=1)  
-                                                                                                                                  #
-correction_button=tk.Radiobutton(button_frame, text="Correction",bg="lightpink",font=("roboto",12,"bold"), command="correction")  #
-correction_button.grid(row=0, column=3)
-                                                                                                                                  #
-deletion_button=tk.Radiobutton(button_frame, text="Deletion",bg="lightpink",font=("roboto",12,"bold"), command="deletion")        #
-deletion_button.grid(row=0, column=9)                                                                                             #
-###################################################################################################################################
+
 
 
 # Top Frame - Row 1: Basic Details
@@ -424,7 +488,8 @@ footer_frame.pack(pady=20)
 tk.Button(footer_frame, text="Add", width=12, bg="green", fg="white", command=add_item).grid(row=0, column=0, padx=10)
 tk.Button(footer_frame, text="Delete", width=12, bg="red", fg="white", command=delete_item).grid(row=0, column=1, padx=10)
 tk.Button(footer_frame, text="Save", width=12, bg="blue", fg="white", command=save_items).grid(row=0, column=2, padx=10)
-tk.Button(footer_frame, text="Correction", width=12, bg="purple", fg="white", command=correction_item).grid(row=0,column=3, padx=10)
+correction_button=tk.Button(footer_frame, text="Correction", width=12, bg="purple", fg="white", command=correction_item)
+correction_button.grid(row=0,column=3, padx=10)
 
 # Run the application
 root.mainloop()
