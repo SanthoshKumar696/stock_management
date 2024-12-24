@@ -1,36 +1,13 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-import sqlite3
 
-# Database connection
-conn = sqlite3.connect('stock.db')
-cursor = conn.cursor()
-
-# Create sub_ledger table
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS sub_ledger(
-    Id INTEGER PRIMARY KEY AUTOINCREMENT,
-    main_product TEXT,
-    code TEXT,
-    name TEXT,
-    credit_period_days INTEGER,
-    FOREIGN KEY (main_product) REFERENCES main_ledger(name))
-""")
-conn.commit()
-
-
-# Fetch main products from the main_ledger table
-def fetch_main_products():
-    cursor.execute("SELECT name FROM main_ledger")
-    return [row[0] for row in cursor.fetchall()]
-
-def open_sub_ledger(root):  # Start the Sub Ledger page
-
-    # Create a new window for Sub Ledger
-    sub_ledger_window = tk.Toplevel(root)
-    sub_ledger_window.title("Sub Ledger")
+def open_sub_ledger(root):  #### start the sub product 
+    # Create a new window for Main Ledger
+    sub_ledger_window = tk.Toplevel()
+    sub_ledger_window.title("Main Product Master")
     screen_width = root.winfo_screenwidth()
     screen_height = root.winfo_screenheight()
+
     sub_ledger_window.geometry(f"{screen_width}x{screen_height}")
     sub_ledger_window.configure(bg="lightblue")
 
@@ -39,8 +16,7 @@ def open_sub_ledger(root):  # Start the Sub Ledger page
     main_ledger_var = tk.StringVar()  # Dropdown selection
     code_var = tk.StringVar()
     name_var = tk.StringVar()
-    credit_period_var = tk.StringVar()
-    last_name_var = tk.StringVar()
+    
 
     # First Line: Radio Buttons for Operations
     tk.Label(
@@ -69,10 +45,11 @@ def open_sub_ledger(root):  # Start the Sub Ledger page
         bg="lightblue"
     ).grid(row=1, column=0, sticky="w", padx=10, pady=10)
 
+    main_ledger_options = ["Ledger 1", "Ledger 2", "Ledger 3"]  # Example options
     main_ledger_dropdown = ttk.Combobox(
         sub_ledger_window,
         textvariable=main_ledger_var,
-        values=fetch_main_products(),
+        values=main_ledger_options,
         state="readonly",
         width=30
     )
@@ -110,37 +87,6 @@ def open_sub_ledger(root):  # Start the Sub Ledger page
     )
     name_entry.grid(row=3, column=1, columnspan=3, padx=10, pady=10)
 
-    # Fifth Line: Credit Period
-    tk.Label(
-        sub_ledger_window,
-        text="Credit Period (Days):",
-        font=("Arial", 12),
-        bg="lightblue"
-    ).grid(row=4, column=0, sticky="w", padx=10, pady=10)
-
-    credit_period_entry = tk.Entry(
-        sub_ledger_window,
-        textvariable=credit_period_var,
-        font=("Arial", 12),
-        width=30
-    )
-    credit_period_entry.grid(row=4, column=1, columnspan=3, padx=10, pady=10)
-
-    # Sixth Line: Last Name
-    tk.Label(
-        sub_ledger_window,
-        text="Last Name:",
-        font=("Arial", 12),
-        bg="lightblue"
-    ).grid(row=5, column=0, sticky="w", padx=10, pady=10)
-
-    last_name_entry = tk.Entry(
-        sub_ledger_window,
-        textvariable=last_name_var,
-        font=("Arial", 12),
-        width=30
-    )
-    last_name_entry.grid(row=5, column=1, columnspan=3, padx=10, pady=10)
 
     # Right-side Frame to Show Entered Details
     details_frame = tk.Frame(sub_ledger_window, bg="lightgray", width=400, height=300)
@@ -153,8 +99,7 @@ def open_sub_ledger(root):  # Start the Sub Ledger page
         main_ledger = main_ledger_var.get()
         code = code_var.get()
         name = name_var.get()
-        credit_period = credit_period_var.get()
-        last_name = last_name_var.get()
+        
 
         # Clear previous details
         for widget in details_frame.winfo_children():
@@ -166,67 +111,33 @@ def open_sub_ledger(root):  # Start the Sub Ledger page
             text=f"Operation: {operation}\n"
                  f"Main Ledger: {main_ledger}\n"
                  f"Code: {code}\n"
-                 f"Name: {name}\n"
-                 f"Credit Period: {credit_period} days\n"
-                 f"Last Name: {last_name}",
+                 f"Name: {name}\n",
             font=("Arial", 12),
             bg="lightgray",
             justify="left"
         )
         details_label.pack(padx=10, pady=10)
 
-    # Save Entry Function
+    # Button Actions
     def save_entry():
-        # Extract values from StringVar objects
-        operation = operation_var.get()
-        main_ledger = main_ledger_var.get()
-        code = code_var.get()
-        name = name_var.get()
-        credit_period = credit_period_var.get()
-        last_name = last_name_var.get()
-
-        # Validate that all fields are filled
-        if operation and main_ledger and code and name and credit_period and last_name:
-            try:
-                # Convert credit_period to an integer (if applicable)
-                credit_period = int(credit_period)
-
-                # Execute SQL insert
-                cursor.execute(
-                    "INSERT INTO sub_ledger (main_product, code, name, credit_period_days) VALUES (?, ?, ?, ?)",
-                    (main_ledger, code, name, credit_period)
-                )
-                conn.commit()
-
-                # Display success message
-                messagebox.showinfo("Success", f"Sub-product '{name}' added under '{main_ledger}'!")
-
-                # Clear entry fields after saving
-                code_entry.delete(0, tk.END)
-                name_entry.delete(0, tk.END)
-                credit_period_entry.delete(0, tk.END)
-                main_ledger_dropdown.set("")
-                last_name_entry.delete(0, tk.END)
-
-            except sqlite3.IntegrityError as e:
-                # Handle database-specific errors, such as duplicate codes
-                messagebox.showerror("Database Error", f"Error: {e}")
-            except ValueError:
-                # Handle invalid credit_period input
-                messagebox.showerror("Invalid Input", "Credit Period must be an integer.")
+        if (
+            operation_var.get() and
+            main_ledger_var.get() and
+            code_var.get() and
+            name_var.get() 
+        ):
+            messagebox.showinfo("Saved", "Details Saved Successfully!")
+            display_entered_details()
         else:
-            # Show warning if any fields are empty
             messagebox.showwarning("Missing Fields", "Please fill all the fields!")
 
-    # Cancel Entry Function
     def cancel_entry():
         # Clear all fields
         operation_var.set("Addition")
         main_ledger_var.set("")
         code_var.set("")
         name_var.set("")
-        credit_period_var.set("")
-        last_name_var.set("")
+        
 
     # Buttons
     tk.Button(
@@ -268,31 +179,5 @@ def open_sub_ledger(root):  # Start the Sub Ledger page
         width=10,
         command=lambda: messagebox.showinfo("Name List", "Display the name list logic here.")
     ).grid(row=6, column=3, pady=20)
-
-    
-     
-
-    # Function to display names in the sub_ledger table
-    def display_name_list():
-        try:
-            cursor.execute("SELECT name FROM sub_ledger")
-            names = cursor.fetchall()
-            if names:
-                name_list = "\n".join(name[0] for name in names)
-                messagebox.showinfo("Name List", f"Names in Sub Ledger:\n{name_list}")
-            else:
-                messagebox.showinfo("Name List", "No names found in Sub Ledger.")
-        except sqlite3.Error as e:
-            messagebox.showerror("Database Error", f"Error: {e}")
-
-    # Update Name List button command
-    tk.Button(
-        sub_ledger_window,
-        text="Name List",
-        font=("Arial", 12),
-        bg="blue",
-        fg="white",
-        width=10,
-        command=display_name_list
-    ).grid(row=6, column=3, pady=20)
-
+    ##### end the sub product ended 
+### sub product master page ended

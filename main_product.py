@@ -1,166 +1,156 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
+import sqlite3
 
-def open_main_product(root): #### main product page start
+
+# database connection
+conn=sqlite3.connect('stock.db')
+cursor=conn.cursor()
+
+# Create main_ledger table
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS main_ledger (
+    code TEXT PRIMARY KEY,
+    name TEXT UNIQUE
+)
+""")
+conn.commit()
+
+
+
+def open_main_product(root):
     # Create a new window for Main Ledger
-    sub_ledger_window = tk.Toplevel()
-    sub_ledger_window.title("Main Product Master")
+    ledger_window = tk.Toplevel()
+    ledger_window.title("Main Ledger")
+    
     screen_width = root.winfo_screenwidth()
     screen_height = root.winfo_screenheight()
 
-    sub_ledger_window.geometry(f"{screen_width}x{screen_height}")
+    ledger_window.geometry(f"{screen_width}x{screen_height}")
     
-    sub_ledger_window.configure(bg="lightblue")
+    ledger_window.configure(bg="lightblue")
 
-    # Variables for input fields
-    operation_var = tk.StringVar(value="Addition")  # Default radio button selection
-    main_ledger_var = tk.StringVar()  # Dropdown selection
-    code_var = tk.StringVar()
-    name_var = tk.StringVar()
-    
+    # Frame for the left section (Radio Buttons and Inputs)
+    left_frame = tk.Frame(ledger_window, bg="lightblue")
+    left_frame.pack(side="left", fill="y", padx=10, pady=10)
 
-    # First Line: Radio Buttons for Operations
+    # Radio Button Options
+    operation_var = tk.StringVar(value="Addition")  # Default selection
     tk.Label(
-        sub_ledger_window,
-        text="Select Operation:",
-        font=("Arial", 12, "bold"),
+        left_frame, 
+        text="Select Operation:", 
+        font=("Arial", 12), 
         bg="lightblue"
-    ).grid(row=0, column=0, sticky="w", padx=10, pady=10)
+    ).pack(anchor="w", padx=10, pady=5)
 
-    operations = ["Addition", "Correction", "Deletion", "View"]
-    for i, operation in enumerate(operations):
+    for operation in ["Addition", "Correction", "Deletion", "View"]:
         tk.Radiobutton(
-            sub_ledger_window,
-            text=operation,
-            variable=operation_var,
-            value=operation,
-            font=("Arial", 10),
+            left_frame, 
+            text=operation, 
+            variable=operation_var, 
+            value=operation, 
+            font=("Arial", 10), 
             bg="lightblue"
-        ).grid(row=0, column=i + 1, padx=10)
+        ).pack(anchor="w", padx=20)
 
-    # Second Line: Main Ledger Dropdown
-    
-    # Third Line: Code
+    # Input for Code
     tk.Label(
-        sub_ledger_window,
-        text="Code:",
-        font=("Arial", 12),
+        left_frame, 
+        text="Code:", 
+        font=("Arial", 12), 
         bg="lightblue"
-    ).grid(row=2, column=0, sticky="w", padx=10, pady=10)
+    ).pack(anchor="w", padx=10, pady=5)
 
-    code_entry = tk.Entry(
-        sub_ledger_window,
-        textvariable=code_var,
-        font=("Arial", 12),
-        width=30
-    )
-    code_entry.grid(row=2, column=1, columnspan=3, padx=10, pady=10)
+    code_entry = tk.Entry(left_frame, width=30, font=("Arial", 12))
+    code_entry.pack(padx=10, pady=5)
 
-    # Fourth Line: Name
+    # Input for Name
     tk.Label(
-        sub_ledger_window,
-        text="Name:",
-        font=("Arial", 12),
+        left_frame, 
+        text="Name:", 
+        font=("Arial", 12), 
         bg="lightblue"
-    ).grid(row=3, column=0, sticky="w", padx=10, pady=10)
+    ).pack(anchor="w", padx=10, pady=5)
 
-    name_entry = tk.Entry(
-        sub_ledger_window,
-        textvariable=name_var,
-        font=("Arial", 12),
-        width=30
-    )
-    name_entry.grid(row=3, column=1, columnspan=3, padx=10, pady=10)
+    name_entry = tk.Entry(left_frame, width=30, font=("Arial", 12))
+    name_entry.pack(padx=10, pady=5)
 
-
-    # Right-side Frame to Show Entered Details
-    details_frame = tk.Frame(sub_ledger_window, bg="lightgray", width=400, height=300)
-    details_frame.grid(row=0, column=4, rowspan=7, padx=20, pady=10)
-
-    # Function to update and display entered details in the right-side box
-    def display_entered_details():
-        # Get the entered values
-        operation = operation_var.get()
-        main_ledger = main_ledger_var.get()
-        code = code_var.get()
-        name = name_var.get()
-        
-
-        # Clear previous details
-        for widget in details_frame.winfo_children():
-            widget.destroy()
-
-        # Display the new details in a label
-        details_label = tk.Label(
-            details_frame,
-            text=f"Operation: {operation}\n"
-                 f"Code: {code}\n"
-                 f"Name: {name}\n",
-            font=("Arial", 12),
-            bg="lightgray",
-            justify="left"
-        )
-        details_label.pack(padx=10, pady=10)
-
-    # Button Actions
+    # Save button functionality
     def save_entry():
-        if (
-            operation_var.get() and
-            main_ledger_var.get() and
-            code_var.get() and
-            name_var.get() 
-        ):
-            messagebox.showinfo("Saved", "Details Saved Successfully!")
-            display_entered_details()
-        else:
-            messagebox.showwarning("Missing Fields", "Please fill all the fields!")
+        code = code_entry.get().strip()
+        name = name_entry.get().strip()
+        if code and name:
+            stored_details_tree.insert("", "end", values=(code, name))
+            code_entry.delete(0, tk.END)
+            name_entry.delete(0, tk.END)
 
-    def cancel_entry():
-        # Clear all fields
-        operation_var.set("Addition")
-        main_ledger_var.set("")
-        code_var.set("")
-        name_var.set("")
+            try:
+                cursor.execute("INSERT INTO main_ledger (code, name) VALUES (?, ?)", (code, name))
+                conn.commit()
+                messagebox.showinfo("Success", f"Product '{name}' added successfully!")
+                code_entry.delete(0, tk.END)
+                name_entry.delete(0, tk.END)
+            except sqlite3.IntegrityError as e:
+                messagebox.showerror("Database Error", f"Error: {e}")
+
         
+        else:
+            messagebox.showwarning("Input Error", "Please enter both Code and Name")
 
     # Buttons
     tk.Button(
-        sub_ledger_window,
-        text="Save",
-        font=("Arial", 12),
-        bg="green",
-        fg="white",
-        width=10,
+        left_frame, 
+        text="Save", 
+        font=("Arial", 12), 
+        bg="green", 
+        fg="white", 
+        width=10, 
         command=save_entry
-    ).grid(row=6, column=0, pady=20)
+    ).pack(pady=10)
 
     tk.Button(
-        sub_ledger_window,
-        text="Cancel",
-        font=("Arial", 12),
-        bg="orange",
-        fg="white",
-        width=10,
-        command=cancel_entry
-    ).grid(row=6, column=1, pady=20)
+        left_frame, 
+        text="Cancel", 
+        font=("Arial", 12), 
+        bg="orange", 
+        fg="white", 
+        width=10, 
+        command=lambda: [code_entry.delete(0, tk.END), name_entry.delete(0, tk.END)]
+    ).pack(pady=5)
 
     tk.Button(
-        sub_ledger_window,
-        text="Exit",
-        font=("Arial", 12),
-        bg="red",
-        fg="white",
-        width=10,
-        command=sub_ledger_window.destroy
-    ).grid(row=6, column=2, pady=20)
+        left_frame, 
+        text="Exit", 
+        font=("Arial", 12), 
+        bg="red", 
+        fg="white", 
+        width=10, 
+        command=ledger_window.destroy
+    ).pack(pady=5)
 
-    tk.Button(
-        sub_ledger_window,
-        text="Name List",
-        font=("Arial", 12),
-        bg="blue",
-        fg="white",
-        width=10,
-        command=lambda: messagebox.showinfo("Name List", "Display the name list logic here.")
-    ).grid(row=6, column=3, pady=20)
-### main product master page ended
+    # Frame for the right section (Stored Details Table)
+    right_frame = tk.Frame(ledger_window, bg="lightblue")
+    right_frame.pack(side="left", fill="both", expand=True, padx=10, pady=10)
+
+    tk.Label(
+        right_frame, 
+        text="Stored Details", 
+        font=("Arial", 12, "bold"), 
+        bg="lightblue"
+    ).pack(pady=10)
+
+    # Treeview (Table) for displaying stored details
+    columns = ("Code", "Name")
+    stored_details_tree = ttk.Treeview(right_frame, columns=columns, show="headings", height=20)
+    stored_details_tree.heading("Code", text="Code")
+    stored_details_tree.heading("Name", text="Name")
+    stored_details_tree.column("Code", width=100, anchor="center")
+    stored_details_tree.column("Name", width=200, anchor="center")
+    stored_details_tree.pack(fill="both", expand=True, padx=10)
+
+    # Preloaded data
+    stored_data = []
+
+    for item in stored_data:
+        stored_details_tree.insert("", "end", values=item)
+    # Add a button to close the ledger window 
