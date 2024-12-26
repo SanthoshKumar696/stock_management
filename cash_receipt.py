@@ -274,9 +274,7 @@ def correction_item():
 def update_item():
     # Fetch updated values from entry fields
     updated_values=(
-
         date_entry.get(),
-        
         party_entry.get(),
         main_product_combo.get(),
         sub_product_combo.get(),
@@ -396,6 +394,24 @@ exit_menu.add_command(label="Exit", command=exit_program)
 
 cash_receipt_label = tk.Label(root, text="Cash Receipt", font=("Times", 25, "bold"), bg="lightpink", fg="Green")
 cash_receipt_label.pack(pady=10)
+#############################################################################################################################
+# main_frame = tk.Frame(root, bg="lightpink")
+# main_frame.pack(fill="both", expand=True)
+
+# left_container = tk.Frame(main_frame, bg="lightpink", width=screen_width // 2)
+# left_container.pack(side="left", fill="y", padx=10, pady=10)
+
+# # Add a frame for the radio buttons
+# radio_frame = tk.Frame(left_container, bg="lightpink", bd=2, relief="solid", padx=10, pady=5)
+# radio_frame.pack(pady=5)
+
+# # Radio buttons for Add, Correct, Delete
+# operation_var = tk.StringVar(value="Add")
+# tk.Radiobutton(radio_frame, text="Add", variable=operation_var, value="Add", bg="lightpink", font=("Times", 14)).pack(side="left", padx=10)
+# tk.Radiobutton(radio_frame, text="Correction", variable=operation_var, value="Correction", bg="lightpink", font=("Times", 14)).pack(side="left", padx=10)
+# tk.Radiobutton(radio_frame, text="Delete", variable=operation_var, value="Delete", bg="lightpink", font=("Times", 14)).pack(side="left", padx=10)
+#################################################################################################################################################
+
 
 # Top Frame - Row 1: Basic Details
 # Top Frame - Line 1: Date, Transaction, Party Name
@@ -493,15 +509,14 @@ narration_entry.grid(row=1, column=2, padx=5, columnspan=3, sticky="w")
 narration_entry.bind("<Return>", focus_next_widget)
 
 
-# Treeview Frame for Displaying Items
-tree_frame = tk.Frame(root, bg="lightpink")
-tree_frame.pack(pady=10, fill="both", expand=True)
 
-# Define the columns
+# Frame for the Treeview and Scrollbars
+tree_frame = tk.Frame(root, bg="lightpink", width=600, height=800)
+tree_frame.pack(pady=10)
+
+# Create the Treeview widget
 columns = ("#1", "#2", "#3", "#4", "#5", "#6", "#7", "#8", "#9", "#10", "#11", "#12", "#13", "#14", "#15")
-
-# Create the Treeview widget with fixed height and width
-tree = ttk.Treeview(tree_frame, columns=columns, show="headings", height=10)
+tree = ttk.Treeview(tree_frame, columns=columns, show="headings", height=8)
 
 # Set headings for each column
 tree.heading("#1", text="SLNo")
@@ -522,36 +537,36 @@ tree.heading("#15", text="Narration")
 
 # Set column width and alignment
 tree.column("#1", width=30, anchor=tk.CENTER)
-tree.column("#2", width=50, anchor=tk.CENTER)
-tree.column("#3", width=150, anchor=tk.W)
-tree.column("#4", width=150, anchor=tk.W)
-tree.column("#5", width=100, anchor=tk.W)
-tree.column("#6", width=120, anchor=tk.W)
+tree.column("#2", width=60, anchor=tk.CENTER)
+tree.column("#3", width=120, anchor=tk.W)
+tree.column("#4", width=120, anchor=tk.W)
+tree.column("#5", width=80, anchor=tk.W)
+tree.column("#6", width=100, anchor=tk.W)
 tree.column("#7", width=40, anchor=tk.CENTER)
 tree.column("#8", width=40, anchor=tk.CENTER)
 tree.column("#9", width=40, anchor=tk.CENTER)
-tree.column("#10", width=80, anchor=tk.CENTER)
+tree.column("#10", width=70, anchor=tk.CENTER)
 tree.column("#11", width=50, anchor=tk.CENTER)
 tree.column("#12", width=40, anchor=tk.CENTER)
-tree.column("#13", width=80, anchor=tk.CENTER)
-tree.column("#14", width=100, anchor=tk.CENTER)
-tree.column("#15", width=200, anchor=tk.W)
+tree.column("#13", width=70, anchor=tk.CENTER)
+tree.column("#14", width=90, anchor=tk.CENTER)
+tree.column("#15", width=180, anchor=tk.W)
 
-# Create scrollbars
+# Add horizontal and vertical scrollbars
 x_scrollbar = tk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
 y_scrollbar = tk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
 
-# Link the scrollbars to the treeview
+# Configure the Treeview to use the scrollbars
 tree.configure(xscrollcommand=x_scrollbar.set, yscrollcommand=y_scrollbar.set)
 
-# Pack the scrollbars and treeview
-tree.pack(fill="both", expand=True)
-x_scrollbar.pack(fill="x", side="bottom")
-y_scrollbar.pack(fill="y", side="right")
+# Pack the Treeview and scrollbars
+tree.grid(row=0, column=0, sticky="nsew")
+y_scrollbar.grid(row=0, column=1, sticky="ns")
+x_scrollbar.grid(row=1, column=0, sticky="ew")
 
-# Example of inserting data into the Treeview
-tree.insert("", "end", values=("1", "01-01-2024", "John Doe", "Gold", "Ring", "Sales", "100", "5", "10", "95", "5", "4", "1500", "15000", "Test"))
-
+# Configure the grid to make the Treeview expand with the frame
+tree_frame.grid_rowconfigure(0, weight=1)
+tree_frame.grid_columnconfigure(0, weight=1)
 
 # Footer Frame - Buttons
 footer_frame = tk.Frame(root, bg="lightpink")

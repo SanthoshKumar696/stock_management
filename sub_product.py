@@ -18,7 +18,6 @@ CREATE TABLE IF NOT EXISTS sub_ledger(
 """)
 conn.commit()
 
-
 # Fetch main products from the main_ledger table
 def fetch_main_products():
     cursor.execute("SELECT name FROM main_ledger")
@@ -28,38 +27,21 @@ def open_sub_product(root):  # Start the Sub Ledger page
 
     # Create a new window for Sub Ledger
     sub_ledger_window = tk.Toplevel(root)
-    sub_ledger_window.title("Sub Ledger")
+    sub_ledger_window.title("Sub Product")
     screen_width = root.winfo_screenwidth()
     screen_height = root.winfo_screenheight()
     sub_ledger_window.geometry(f"{screen_width}x{screen_height}")
     sub_ledger_window.configure(bg="lightblue")
 
     # Variables for input fields
-    operation_var = tk.StringVar(value="Addition")  # Default radio button selection
+   
     main_ledger_var = tk.StringVar()  # Dropdown selection
     code_var = tk.StringVar()
     name_var = tk.StringVar()
     credit_period_var = tk.StringVar()
     last_name_var = tk.StringVar()
 
-    # First Line: Radio Buttons for Operations
-    tk.Label(
-        sub_ledger_window,
-        text="Select Operation:",
-        font=("Arial", 12, "bold"),
-        bg="lightblue"
-    ).grid(row=0, column=0, sticky="w", padx=10, pady=10)
 
-    operations = ["Addition", "Correction", "Deletion", "View"]
-    for i, operation in enumerate(operations):
-        tk.Radiobutton(
-            sub_ledger_window,
-            text=operation,
-            variable=operation_var,
-            value=operation,
-            font=("Arial", 10),
-            bg="lightblue"
-        ).grid(row=0, column=i + 1, padx=10)
 
     # Second Line: Main Ledger Dropdown
     tk.Label(
@@ -145,99 +127,107 @@ def open_sub_product(root):  # Start the Sub Ledger page
     # Right-side Frame to Show Entered Details
     details_frame = tk.Frame(sub_ledger_window, bg="lightgray", width=400, height=300)
     details_frame.grid(row=0, column=4, rowspan=7, padx=20, pady=10)
+    # View Entries Function
+    columns = ("Code", "Name")
+    stored_details_tree = ttk.Treeview(details_frame, columns=columns, show="headings", height=10)  # Reduced height
+    stored_details_tree.heading("Code", text="Code")
+    stored_details_tree.heading("Name", text="Name")
+    stored_details_tree.column("Code", width=100, anchor="center")  # Adjusted width
+    stored_details_tree.column("Name", width=200, anchor="center")  # Increased width
+    stored_details_tree.pack(fill="both", expand=True, padx=20)
 
-    # Function to update and display entered details in the right-side box
-    def display_entered_details():
-        # Get the entered values
-        operation = operation_var.get()
-        main_ledger = main_ledger_var.get()
-        code = code_var.get()
-        name = name_var.get()
-        credit_period = credit_period_var.get()
-        last_name = last_name_var.get()
-
-        # Clear previous details
-        for widget in details_frame.winfo_children():
-            widget.destroy()
-
-        # Display the new details in a label
-        details_label = tk.Label(
-            details_frame,
-            text=f"Operation: {operation}\n"
-                 f"Main Ledger: {main_ledger}\n"
-                 f"Code: {code}\n"
-                 f"Name: {name}\n"
-                 f"Credit Period: {credit_period} days\n"
-                 f"Last Name: {last_name}",
-            font=("Arial", 12),
-            bg="lightgray",
-            justify="left"
-        )
-        details_label.pack(padx=10, pady=10)
-
-    # Save Entry Function
     def save_entry():
-        # Extract values from StringVar objects
-        operation = operation_var.get()
-        main_ledger = main_ledger_var.get()
-        code = code_var.get()
-        name = name_var.get()
-        credit_period = credit_period_var.get()
-        last_name = last_name_var.get()
+    # Get values from input fields
+        main_product = main_ledger_var.get()
+        code = code_var.get().strip()
+        name = name_var.get().strip()
+        credit_period = credit_period_var.get().strip()
 
-        # Validate that all fields are filled
-        if operation and main_ledger and code and name and credit_period and last_name:
-            try:
-                # Convert credit_period to an integer (if applicable)
-                credit_period = int(credit_period)
+        # Validate required fields
+        if not main_product or not code or not name or not credit_period:
+            messagebox.showwarning("Input Error", "All fields except 'Last Name' are required.")
+            return
 
-                # Execute SQL insert
-                cursor.execute(
-                    "INSERT INTO sub_ledger (main_product, code, name, credit_period_days) VALUES (?, ?, ?, ?)",
-                    (main_ledger, code, name, credit_period)
-                )
-                conn.commit()
+        # Validate if credit_period is an integer
+        if not credit_period.isdigit():
+            messagebox.showerror("Input Error", "Credit Period must be a valid integer.")
+            return
 
-                # Display success message
-                messagebox.showinfo("Success", f"Sub-product '{name}' added under '{main_ledger}'!")
+        try:
+            # Insert data into sub_ledger table
+            cursor.execute(
+                "INSERT INTO sub_ledger (main_product, code, name, credit_period_days) VALUES (?, ?, ?, ?)",
+                (main_product, code, name, int(credit_period))
+            )
+            conn.commit()
 
-                # Clear entry fields after saving
-                code_entry.delete(0, tk.END)
-                name_entry.delete(0, tk.END)
-                credit_period_entry.delete(0, tk.END)
-                main_ledger_dropdown.set("")
-                last_name_entry.delete(0, tk.END)
+            # Clear input fields after saving
+            main_ledger_var.set("")
+            code_var.set("")
+            name_var.set("")
+            credit_period_var.set("")
+            last_name_var.set("")
 
-            except sqlite3.IntegrityError as e:
-                # Handle database-specific errors, such as duplicate codes
-                messagebox.showerror("Database Error", f"Error: {e}")
-            except ValueError:
-                # Handle invalid credit_period input
-                messagebox.showerror("Invalid Input", "Credit Period must be an integer.")
-        else:
-            # Show warning if any fields are empty
-            messagebox.showwarning("Missing Fields", "Please fill all the fields!")
+            messagebox.showinfo("Success", "Sub-product saved successfully!")
 
-    # Cancel Entry Function
-    def cancel_entry():
-        # Clear all fields
-        operation_var.set("Addition")
-        main_ledger_var.set("")
-        code_var.set("")
-        name_var.set("")
-        credit_period_var.set("")
-        last_name_var.set("")
+            # Optionally, update the details frame to reflect new data
+            view_entries()
 
+        except sqlite3.DatabaseError as e:
+            messagebox.showerror("Database Error", f"Error: {e}")
+
+
+    def view_entries():
+        selected_main_ledger = main_ledger_var.get()
+        if not selected_main_ledger:
+            messagebox.showwarning("No Selection", "Please select a Main Ledger to view related sub-products.")
+            return
+
+        # Clear the treeview before displaying filtered results
+        for item in stored_details_tree.get_children():
+            stored_details_tree.delete(item)
+
+        try:
+            # Fetch and display filtered sub-ledger details
+            cursor.execute(
+                "SELECT main_product, name FROM sub_ledger WHERE main_product = ?",
+                (selected_main_ledger,)
+            )
+            filtered_results = cursor.fetchall()
+
+            if not filtered_results:
+                messagebox.showinfo("No Results", f"No sub-products found under '{selected_main_ledger}'.")
+            else:
+                for row in filtered_results:
+                    stored_details_tree.insert("", "end", values=row)
+
+        except sqlite3.DatabaseError as e:
+            messagebox.showerror("Database Error", f"Error: {e}")
+
+
+    # Function to open a new window with filtered data
+    
     # Buttons
     tk.Button(
         sub_ledger_window,
-        text="Save",
+        text="View",
         font=("Arial", 12),
-        bg="green",
+        bg="blue",
         fg="white",
         width=10,
-        command=save_entry
+        command=view_entries
+    ).grid(row=6, column=3, pady=20)
+
+    tk.Button(
+    sub_ledger_window,
+    text="Save",
+    font=("Arial", 12),
+    bg="green",
+    fg="white",
+    width=10,
+    command=save_entry
     ).grid(row=6, column=0, pady=20)
+
 
     tk.Button(
         sub_ledger_window,
@@ -246,7 +236,7 @@ def open_sub_product(root):  # Start the Sub Ledger page
         bg="orange",
         fg="white",
         width=10,
-        command=cancel_entry
+        command=lambda: messagebox.showinfo("Cancel Button", "Cancel functionality pending")
     ).grid(row=6, column=1, pady=20)
 
     tk.Button(
@@ -259,40 +249,12 @@ def open_sub_product(root):  # Start the Sub Ledger page
         command=sub_ledger_window.destroy
     ).grid(row=6, column=2, pady=20)
 
-    tk.Button(
-        sub_ledger_window,
-        text="Name List",
-        font=("Arial", 12),
-        bg="blue",
-        fg="white",
-        width=10,
-        command=lambda: messagebox.showinfo("Name List", "Display the name list logic here.")
-    ).grid(row=6, column=3, pady=20)
+# Test root window
+if __name__ == "__main__":
+    root = tk.Tk()
+    root.title("Main Application")
+    root.geometry("800x600")
 
-    
-     
+    tk.Button(root, text="Open Sub Product", command=lambda: open_sub_product(root)).pack(pady=20)
 
-    # Function to display names in the sub_ledger table
-    def display_name_list():
-        try:
-            cursor.execute("SELECT name FROM sub_ledger")
-            names = cursor.fetchall()
-            if names:
-                name_list = "\n".join(name[0] for name in names)
-                messagebox.showinfo("Name List", f"Names in Sub Ledger:\n{name_list}")
-            else:
-                messagebox.showinfo("Name List", "No names found in Sub Ledger.")
-        except sqlite3.Error as e:
-            messagebox.showerror("Database Error", f"Error: {e}")
-
-    # Update Name List button command
-    tk.Button(
-        sub_ledger_window,
-        text="Name List",
-        font=("Arial", 12),
-        bg="blue",
-        fg="white",
-        width=10,
-        command=display_name_list
-    ).grid(row=6, column=3, pady=20)
-
+    root.mainloop()

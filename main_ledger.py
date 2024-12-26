@@ -7,9 +7,7 @@ def open_main_ledger(root): #### main product page start
     sub_ledger_window.title("Main Product Master")
     screen_width = root.winfo_screenwidth()
     screen_height = root.winfo_screenheight()
-
     sub_ledger_window.geometry(f"{screen_width}x{screen_height}")
-    
     sub_ledger_window.configure(bg="lightblue")
 
     # Variables for input fields

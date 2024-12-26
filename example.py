@@ -1,150 +1,125 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
+from datetime import datetime
 import sqlite3
 
-# Database Setup
-def setup_database():
-    conn = sqlite3.connect('cash_receipt.db')
-    c = conn.cursor()
-    c.execute('''
-    CREATE TABLE IF NOT EXISTS receipts (
-        id INTEGER PRIMARY KEY,
-        name TEXT,
-        amount REAL,
-        date TEXT
-    )
-    ''')
-    conn.commit()
-    conn.close()
+# Database connection
+conn = sqlite3.connect('stock.db')
+cursor = conn.cursor()
 
-# Add New Data to Database
-def add_data(name, amount, date):
-    conn = sqlite3.connect('cash_receipt.db')
-    c = conn.cursor()
-    c.execute('INSERT INTO receipts (name, amount, date) VALUES (?, ?, ?)', (name, amount, date))
-    conn.commit()
-    conn.close()
+# Function to focus on the next widget
+def focus_next_widget(event):
+    """Move the focus to the next widget."""
+    event.widget.tk_focusNext().focus()
+    return "break"
 
-# Fetch All Data from Database
-def fetch_data():
-    conn = sqlite3.connect('cash_receipt.db')
-    c = conn.cursor()
-    c.execute('SELECT * FROM receipts')
-    rows = c.fetchall()
-    conn.close()
-    return rows
+# Function to handle exit menu action
+def exit_program():
+    root.quit()
 
-# Update Data in Database
-def update_data(record_id, name, amount, date):
-    conn = sqlite3.connect('cash_receipt.db')
-    c = conn.cursor()
-    c.execute('UPDATE receipts SET name = ?, amount = ?, date = ? WHERE id = ?', (name, amount, date, record_id))
-    conn.commit()
-    conn.close()
-
-# Refresh Treeview
-def refresh_treeview():
-    for item in tree.get_children():
-        tree.delete(item)
-
-    for row in fetch_data():
-        tree.insert('', tk.END, values=row)
-
-# Save or Update Data
-def save_or_update():
-    name = name_entry.get()
-    amount = amount_entry.get()
-    date = date_entry.get()
-
-    if not name or not amount or not date:
-        messagebox.showerror("Missing Information", "All fields are required.")
-        return
-
-    try:
-        amount = float(amount)
-    except ValueError:
-        messagebox.showerror("Invalid Input", "Amount must be a valid number.")
-        return
-
-    if save_button["text"] == "Save":
-        # Save new data
-        add_data(name, amount, date)
-        messagebox.showinfo("Success", "Record added successfully!")
-    else:
-        # Update existing data
-        global selected_id
-        update_data(selected_id, name, amount, date)
-        messagebox.showinfo("Success", "Record updated successfully!")
-        save_button["text"] = "Save"
-
-    refresh_treeview()
-    clear_fields()
-
-# Load Selected Row for Correction
-def load_for_correction():
-    selected_item = tree.selection()
-    if not selected_item:
-        messagebox.showwarning("No Selection", "Please select a record to modify.")
-        return
-
-    record = tree.item(selected_item[0], "values")
-    global selected_id
-    selected_id = record[0]
-
-    # Populate fields with selected data
-    name_entry.delete(0, tk.END)
-    name_entry.insert(0, record[1])
-    amount_entry.delete(0, tk.END)
-    amount_entry.insert(0, record[2])
-    date_entry.delete(0, tk.END)
-    date_entry.insert(0, record[3])
-
-    save_button["text"] = "Update"
-
-# Clear Input Fields
-def clear_fields():
-    name_entry.delete(0, tk.END)
-    amount_entry.delete(0, tk.END)
-    date_entry.delete(0, tk.END)
-    save_button["text"] = "Save"
-
-# Main Application
+# Create the main root window
 root = tk.Tk()
-root.title("Cash Receipt Manager")
+root.title("Jewelry Management System")
 
-setup_database()
+screen_width = root.winfo_screenwidth()
+screen_height = root.winfo_screenheight()
+root.geometry(f"{screen_width}x{screen_height}")
+root.configure(bg="lightpink")
 
-# Form Fields
-tk.Label(root, text="Name").grid(row=0, column=0, padx=5, pady=5)
-name_entry = tk.Entry(root)
-name_entry.grid(row=0, column=1, padx=5, pady=5)
+# Create menu bar
+menu_bar = tk.Menu(root)
+root.config(menu=menu_bar)
 
-tk.Label(root, text="Amount").grid(row=1, column=0, padx=5, pady=5)
-amount_entry = tk.Entry(root)
-amount_entry.grid(row=1, column=1, padx=5, pady=5)
+# Main layout frame
+main_frame = tk.Frame(root, bg="lightpink")
+main_frame.pack(fill="both", expand=True)
 
-tk.Label(root, text="Date").grid(row=2, column=0, padx=5, pady=5)
-date_entry = tk.Entry(root)
-date_entry.grid(row=2, column=1, padx=5, pady=5)
+# Left container for widgets
+left_container = tk.Frame(main_frame, bg="lightpink", width=screen_width // 2)
+left_container.pack(side="left", fill="y", padx=10, pady=10)
 
-# Save Button
-save_button = tk.Button(root, text="Save", command=save_or_update)
-save_button.grid(row=3, column=0, columnspan=2, pady=10)
+# Add a frame for the radio buttons
+radio_frame = tk.Frame(left_container, bg="lightpink", bd=2, relief="solid", padx=10, pady=5)
+radio_frame.pack(pady=5)
 
-# Treeview
-columns = ("id", "name", "amount", "date")
-tree = ttk.Treeview(root, columns=columns, show="headings")
-tree.heading("id", text="ID")
-tree.heading("name", text="Name")
-tree.heading("amount", text="Amount")
-tree.heading("date", text="Date")
-tree.grid(row=4, column=0, columnspan=2, pady=10)
+# Radio buttons for Add, Correct, Delete
+operation_var = tk.StringVar(value="Add")
+tk.Radiobutton(radio_frame, text="Add", variable=operation_var, value="Add", bg="lightpink", font=("Times", 14)).pack(side="left", padx=10)
+tk.Radiobutton(radio_frame, text="Correction", variable=operation_var, value="Correction", bg="lightpink", font=("Times", 14)).pack(side="left", padx=10)
+tk.Radiobutton(radio_frame, text="Delete", variable=operation_var, value="Delete", bg="lightpink", font=("Times", 14)).pack(side="left", padx=10)
 
-# Correction Button
-correction_button = tk.Button(root, text="Correction", command=load_for_correction)
-correction_button.grid(row=5, column=0, columnspan=2, pady=10)
+# Top Frame for Basic Details
+top_frame = tk.Frame(left_container, bg="lightpink")
+top_frame.pack(pady=10)
 
-# Initialize Treeview
-refresh_treeview()
+# Row 1: Date, Transaction, Party Name
+tk.Label(top_frame, text="Date", bg="lightpink", font=("Times", 15)).grid(row=0, column=0, padx=10, sticky="e")
+date_entry = tk.Entry(top_frame, width=15, justify="center", font=("Times", 14), bd=4)
+date_entry.insert(0, datetime.now().strftime("%d-%m-%Y"))
+date_entry.grid(row=0, column=1, padx=10)
+date_entry.bind("<Return>", focus_next_widget)
+
+tk.Label(top_frame, text="Transaction", bg="lightpink", font=("Times", 15)).grid(row=0, column=2, padx=10, sticky="e")
+transaction_combo = ttk.Combobox(top_frame, values=["Cash Receipt", "Cash Payment", "Purchase", "Purchase Return", "Sales", "Sales Return"], width=20, font=("Times", 14))
+transaction_combo.grid(row=0, column=3, padx=10)
+transaction_combo.bind("<Return>", focus_next_widget)
+
+tk.Label(top_frame, text="Party Name", bg="lightpink", font=("Times", 15)).grid(row=0, column=4, padx=10, sticky="e")
+party_entry = tk.Entry(top_frame, width=20, font=("Times", 14), bd=4)
+party_entry.grid(row=0, column=5, padx=10)
+party_entry.bind("<Return>", focus_next_widget)
+
+# Middle Frame for Product Details
+middle_frame = tk.Frame(left_container, bg="lightpink")
+middle_frame.pack(pady=10)
+
+# Labels and Entries
+columns = [
+    ("Main Product", 20), 
+    ("Design", 20), 
+    ("Gross Wt", 10), 
+    ("Stones", 10),
+    ("Touch", 10),
+    ("Net Wt", 10),
+    ("MC@", 10),
+    ("MC", 10)
+]
+
+for i, (label, width) in enumerate(columns):
+    tk.Label(middle_frame, text=label, bg="lightpink", font=("Times", 15)).grid(row=0, column=i, padx=10, sticky="w")
+    tk.Entry(middle_frame, width=width, font=("Times", 14), bd=4).grid(row=1, column=i, padx=10, pady=5)
+
+# Frame for Treeview and Scrollbars
+tree_frame = tk.Frame(left_container, bg="lightpink", width=600, height=400)
+tree_frame.pack(pady=10)
+
+# Create Treeview widget
+columns = ("#1", "#2", "#3", "#4", "#5", "#6", "#7", "#8", "#9", "#10", "#11", "#12", "#13", "#14", "#15")
+tree = ttk.Treeview(tree_frame, columns=columns, show="headings", height=8)
+
+# Set headings
+for col in columns:
+    tree.heading(col, text=col)
+
+# Add scrollbars
+x_scrollbar = tk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
+y_scrollbar = tk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
+tree.configure(xscrollcommand=x_scrollbar.set, yscrollcommand=y_scrollbar.set)
+
+tree.grid(row=0, column=0, sticky="nsew")
+x_scrollbar.grid(row=1, column=0, sticky="ew")
+y_scrollbar.grid(row=0, column=1, sticky="ns")
+
+# Footer Frame for Buttons
+footer_frame = tk.Frame(left_container, bg="lightpink")
+footer_frame.pack(pady=20)
+
+tk.Button(footer_frame, text="Add", width=12, bg="green", fg="white").grid(row=0, column=0, padx=10)
+tk.Button(footer_frame, text="Delete", width=12, bg="red", fg="white").grid(row=0, column=1, padx=10)
+tk.Button(footer_frame, text="Save", width=12, bg="blue", fg="white").grid(row=0, column=2, padx=10)
+
+# Right container for future use
+right_container = tk.Frame(main_frame, bg="lightpink", width=screen_width // 2)
+right_container.pack(side="right", fill="both", expand=True)
 
 root.mainloop()
