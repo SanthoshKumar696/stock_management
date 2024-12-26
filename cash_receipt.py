@@ -18,6 +18,12 @@ from day_book import day_book
 conn = sqlite3.connect('stock.db')
 cursor = conn.cursor()
 
+#this function is using Enter button cliking move the next column
+def focus_next_widget(event):
+    """Move the focus to the next widget."""
+    event.widget.tk_focusNext().focus()
+    return "break"
+
 # Function to handle exit menu action
 def exit_program():
     root.quit()
@@ -30,6 +36,7 @@ def fetch_main_ledger():
     except sqlite3.OperationalError as e:
         messagebox.showerror("Database Error", f"An error occurred: {e}")
         return []
+
 
 
 #### fetch sub_ledger value for sub_product
@@ -90,11 +97,30 @@ def calculate_net_wt(event=None):  # 'event' is needed for binding
         
         # Insert the calculated value into net_wt_entry
         net_wt_entry.delete(0, tk.END)  # Clear existing value
-        net_wt_entry.insert(0, net_wt)  # Insert new value with 2 decimal places
+        net_wt_entry.insert(0, f"{net_wt:.2f}")  # Insert new value with 2 decimal places
+
+        focus_next_widget(event)
         
     except ValueError:
         messagebox.showerror("Input Error", "Please enter valid numbers for Gross Wt, Stones, and Touch.")
 # Bind the Enter key to the Touch entry field
+
+# Function to calculate MC
+def calculate_mc(event=None):
+    try:
+        mc_at = float(mc_at_entry.get()) if mc_at_entry.get() else 0.0  # Corrected line: Use .get() to retrieve value
+        net_wt = float(net_wt_entry.get()) if net_wt_entry.get() else 0.0  # Corrected line: Use .get() to retrieve value
+
+        mc = net_wt * mc_at  # MC calculation
+
+        mc_entry.delete(0, tk.END)  # Clear existing value
+        mc_entry.insert(0, f"{mc:.2f}")  # Insert calculated value with 2 decimal places
+
+        focus_next_widget(event)  # Move focus to next widget or column
+
+    except ValueError:
+        messagebox.showerror("Input Error", "Please enter valid numbers for MC@ and Net Wt.")
+
 
 # Function to calculate Amount 
 def calculate_amount(event=None):
@@ -102,10 +128,12 @@ def calculate_amount(event=None):
     net_wt=float(net_wt_entry.get()) if net_wt_entry.get() else 0.0
     mc=float(mc_entry.get()) if mc_entry.get() else 0.0
 
-    amount=(net_wt*rate)+(net_wt*mc) 
+    amount=(net_wt*rate)+mc # final amount calculation 
 
     amount_entry.delete(0, tk.END)
-    amount_entry.insert(0,amount)
+    amount_entry.insert(0,f"{amount:.2f}")
+
+    focus_next_widget(event)
     ############################################################
 
 # Functionality for buttons
@@ -311,7 +339,7 @@ def save_items():
     items = tree.get_children()
     if items:
         with open("jewelry_data.csv", "w") as file:
-            file.write("SLNo,Name,Transaction,Gross,Stones,Touch,Net Weight,MC@,MC,Rate,Amount,Narration\n")
+            file.write("SLNo,Date,Name,Main Product, Sub Product,Transaction,Gross,Stones,Touch,Net Weight,MC@,MC,Rate,Amount,Narration\n")
             for item in items:
                 values = tree.item(item, "values")
                 file.write(",".join(values) + "\n")
@@ -343,7 +371,6 @@ exit_menu = tk.Menu(menu_bar, tearoff=0)
 menu_bar.add_cascade(label="Master", menu=master_menu)
 menu_bar.add_cascade(label="Transaction", menu=transaction_menu)
 menu_bar.add_cascade(label="Report", menu=report_menu)
-menu_bar.add_cascade(label="Utility", menu=utility_menu)
 menu_bar.add_cascade(label="Exit", menu=exit_menu)
 
 #Master #### Adding submenu of master menu
@@ -367,92 +394,116 @@ report_menu.add_command(label="Party Balance", command=lambda:party_balance(root
 #Exit
 exit_menu.add_command(label="Exit", command=exit_program)
 
-cash_receipt_label = tk.Label(root, text="Cash Receipt", font=("Arial", 14, "bold"), bg="lightpink", fg="red")
+cash_receipt_label = tk.Label(root, text="Cash Receipt", font=("Times", 25, "bold"), bg="lightpink", fg="Green")
 cash_receipt_label.pack(pady=10)
 
 # Top Frame - Row 1: Basic Details
+# Top Frame - Line 1: Date, Transaction, Party Name
 top_frame = tk.Frame(root, bg="lightpink")
-top_frame.pack(pady=5)
+top_frame.pack(pady=10)
 
-tk.Label(top_frame, text="Date (DD-MM-YYYY):", bg="lightpink", font=("Arial", 10)).grid(row=0, column=0, padx=5)
-date_entry = tk.Entry(top_frame, width=15)
-date_entry.insert(0,datetime.now().strftime("%d-%m-%Y"))
-date_entry.grid(row=0, column=1, padx=5)
+# Row 1
+tk.Label(top_frame, text="Date", bg="lightpink", font=("Times", 15), anchor="w").grid(row=0, column=0, padx=5, sticky="w")
+date_entry = tk.Entry(top_frame, width=15, justify="center", font=("Times",14), bd=4)
+date_entry.insert(0, datetime.now().strftime("%d-%m-%Y"))
+date_entry.grid(row=1, column=0, padx=5, sticky="w")
+date_entry.bind("<Return>", focus_next_widget)
 
-tk.Label(top_frame, text="Transaction:", bg="lightpink", font=("Arial", 10)).grid(row=0, column=2, padx=5)
-transaction_combo = ttk.Combobox(top_frame, values=["Cash Receipt", "Invoice", "Payment"], width=15)
-transaction_combo.grid(row=0, column=3, padx=5)
+tk.Label(top_frame, text="Transaction", bg="lightpink", font=("Times", 15)).grid(row=0, column=1, padx=5, sticky="w")
+transaction_combo = ttk.Combobox(top_frame, values=["Cash Receipt", "Cash Payment", "Purchase", "Purchase Return", "Sales", "Sales Return", "Metal Receipt", "Metal Issue", "Rate Cut Sales", "Rate Cut Purchase", "Achari Receipt", "Achari Issue", "Approval Issue", "Approval Receipt"], width=15, justify="center", font=("Times",14))
+transaction_combo.grid(row=1, column=1, padx=5, sticky="w")
+transaction_combo.bind("<Return>", focus_next_widget)
 
-tk.Label(top_frame, text="Party Name:", bg="lightpink", font=("Arial", 10)).grid(row=0, column=4, padx=5)
-party_entry = tk.Entry(top_frame, width=20)
-party_entry.grid(row=0, column=5, padx=5)
+# Function to update the label when a value is selected
+def update_label(event):
+    selected_transaction = transaction_combo.get()  # Get selected value
+    cash_receipt_label.config(text=selected_transaction)  # Update label text
 
-# Middle Frame - Row 2: Product Details
+# Bind the selection event to the function
+transaction_combo.bind("<<ComboboxSelected>>", update_label)
+
+tk.Label(top_frame, text="Party Name", bg="lightpink", font=("Times", 15)).grid(row=0, column=2, padx=5, sticky="w")
+party_entry = tk.Entry(top_frame, width=20, justify="center", font=("Times",14), bd=4)
+party_entry.grid(row=1, column=2, padx=5, sticky="w")
+party_entry.bind("<Return>", focus_next_widget)
+
+# Middle Frame - Line 2: Main Product, Sub Product, Gross Wt, Stones, Touch, Net Wt, MC@, MC
 middle_frame = tk.Frame(root, bg="lightpink")
-middle_frame.pack(pady=5)
+middle_frame.pack(pady=10)
 
-tk.Label(middle_frame, text="Main Product:", bg="lightpink", font=("Arial", 10)).grid(row=0, column=0, padx=5)
-main_product_combo = ttk.Combobox(middle_frame, values=fetch_main_ledger(), state="readonly",width=20)
-main_product_combo.grid(row=0, column=1, padx=5)
-main_product_combo.bind("<<ComboboxSelected>>",update_sub_products)
+tk.Label(middle_frame, text="Main Product", bg="lightpink", font=("Times", 15)).grid(row=0, column=0, padx=5, sticky="w")
+main_product_combo = ttk.Combobox(middle_frame, values=fetch_main_ledger(), state="readonly", width=20, justify="center", font=("Times",14))
+main_product_combo.grid(row=1, column=0, padx=5, sticky="w")
+main_product_combo.bind('<<ComboboxSelected>>',update_sub_products)
+main_product_combo.bind("<Return>", focus_next_widget)
 
-tk.Label(middle_frame, text="Sub Product:", bg="lightpink", font=("Arial", 10)).grid(row=0, column=2, padx=5)
-sub_product_combo = ttk.Combobox(middle_frame, state="readonly", width=20)
-sub_product_combo.grid(row=0, column=3, padx=5)
+tk.Label(middle_frame, text="Design", bg="lightpink", font=("Times", 15)).grid(row=0, column=1, padx=5, sticky="w")
+sub_product_combo = ttk.Combobox(middle_frame, state="readonly", width=20, justify="center", font=("Times",14))
+sub_product_combo.grid(row=1, column=1, padx=5, sticky="w")
+sub_product_combo.bind("<Return>", focus_next_widget)
 
-tk.Label(middle_frame, text="Gross Wt:", bg="lightpink", font=("Arial", 10)).grid(row=0, column=4, padx=5)
-gross_wt_entry = tk.Entry(middle_frame, width=10)
-gross_wt_entry.grid(row=0, column=5, padx=5)
+tk.Label(middle_frame, text="Gross Wt", bg="lightpink", font=("Times", 15)).grid(row=0, column=2, padx=5, sticky="w")
+gross_wt_entry = tk.Entry(middle_frame, width=8, justify="center", font=("Times",14), bd=4)
+gross_wt_entry.grid(row=1, column=2, padx=5, sticky="w")
+gross_wt_entry.bind("<Return>", focus_next_widget)
 
-tk.Label(middle_frame, text="Stones:", bg="lightpink", font=("Arial", 10)).grid(row=0, column=6, padx=5)
-stones_entry = tk.Entry(middle_frame, width=10)
-stones_entry.grid(row=0, column=7, padx=5)
+tk.Label(middle_frame, text="Stones", bg="lightpink", font=("Times", 15)).grid(row=0, column=3, padx=5, sticky="w")
+stones_entry = tk.Entry(middle_frame, width=7, justify="center", font=("Times",14), bd=4)
+stones_entry.grid(row=1, column=3, padx=5, sticky="w")
+stones_entry.bind("<Return>", focus_next_widget)
 
-# Bottom Frame - Row 3: Additional Details
-bottom_frame = tk.Frame(root, bg="lightpink")
-bottom_frame.pack(pady=5)
-
-tk.Label(bottom_frame, text="Touch:", bg="lightpink", font=("Arial", 10)).grid(row=0, column=0, padx=5)
-touch_entry = tk.Entry(bottom_frame, width=10)
-touch_entry.grid(row=0, column=1, padx=5)
+tk.Label(middle_frame, text="Touch", bg="lightpink", font=("Times", 15)).grid(row=0, column=4, padx=5, sticky="w")
+touch_entry = tk.Entry(middle_frame, width=8, justify="center", font=("Times",14), bd=4)
+touch_entry.grid(row=1, column=4, padx=5, sticky="w")
 touch_entry.bind("<Return>", calculate_net_wt)
 
-tk.Label(bottom_frame, text="Net Wt:", bg="lightpink", font=("Arial", 10)).grid(row=0, column=2, padx=5)
-net_wt_entry = tk.Entry(bottom_frame, width=10)
-net_wt_entry.grid(row=0, column=3, padx=5)
 
-tk.Label(bottom_frame, text="MC@:", bg="lightpink", font=("Arial", 10)).grid(row=0, column=4, padx=5)
-mc_at_entry = tk.Entry(bottom_frame, width=10)
-mc_at_entry.grid(row=0, column=5, padx=5)
+tk.Label(middle_frame, text="Net Wt", bg="lightpink", font=("Times", 15)).grid(row=0, column=5, padx=5, sticky="w")
+net_wt_entry = tk.Entry(middle_frame, width=10, justify="center", font=("Times",14), bd=4)
+net_wt_entry.grid(row=1, column=5, padx=5, sticky="w")
+net_wt_entry.bind("<Return>", focus_next_widget)
 
-tk.Label(bottom_frame, text="MC:", bg="lightpink", font=("Arial", 10)).grid(row=0, column=6, padx=5)
-mc_entry = tk.Entry(bottom_frame, width=10)
-mc_entry.grid(row=0, column=7, padx=5)
+tk.Label(middle_frame, text="MC@", bg="lightpink", font=("Times", 15)).grid(row=0, column=6, padx=5, sticky="w")
+mc_at_entry = tk.Entry(middle_frame, width=7, justify="center", font=("Times",14), bd=4)
+mc_at_entry.grid(row=1, column=6, padx=5, sticky="w")
+mc_at_entry.bind("<Return>", calculate_mc)
 
-tk.Label(bottom_frame, text="GST: ", bg="lightpink", font=("Arial",10)). grid(row=0, column=8, padx=5)
-gst_entry=tk.Entry(bottom_frame,width=10)
-gst_entry.grid(row=0, column=9, padx=5)
+tk.Label(middle_frame, text="MC", bg="lightpink", font=("Times", 15)).grid(row=0, column=7, padx=5, sticky="w")
+mc_entry = tk.Entry(middle_frame, width=8, justify="center", font=("Times",14), bd=4)
+mc_entry.grid(row=1, column=7, padx=5, sticky="w")
+mc_entry.bind("<Return>", focus_next_widget)
 
-tk.Label(bottom_frame, text="Rate:", bg="lightpink", font=("Arial", 10)).grid(row=1, column=0, padx=5)
-rate_entry = tk.Entry(bottom_frame, width=10)
-rate_entry.grid(row=1, column=1, padx=5)
+# Bottom Frame - Line 3: Rate, Amount, Narration
+bottom_frame = tk.Frame(root, bg="lightpink")
+bottom_frame.pack(pady=10)
+
+tk.Label(bottom_frame, text="Rate", bg="lightpink", font=("Times", 15)).grid(row=0, column=0, padx=5, sticky="w")
+rate_entry = tk.Entry(bottom_frame, width=10, justify="center", font=("Times",14), bd=4)
+rate_entry.grid(row=1, column=0, padx=5, sticky="w")
 rate_entry.bind("<Return>", calculate_amount)
 
-tk.Label(bottom_frame, text="Amount:", bg="lightpink", font=("Arial", 10)).grid(row=1, column=2, padx=5)
-amount_entry = tk.Entry(bottom_frame, width=10)
-amount_entry.grid(row=1, column=3, padx=5)
+tk.Label(bottom_frame, text="Amount", bg="lightpink", font=("Times", 15)).grid(row=0, column=1, padx=5, sticky="w")
+amount_entry = tk.Entry(bottom_frame, width=11, justify="center", font=("Times",14), bd=4)
+amount_entry.grid(row=1, column=1, padx=5, sticky="w")
+amount_entry.bind("<Return>", focus_next_widget)
 
-tk.Label(bottom_frame, text="Narration:", bg="lightpink", font=("Arial", 10)).grid(row=1, column=4, padx=5)
-narration_entry = tk.Entry(bottom_frame, width=30)
-narration_entry.grid(row=1, column=5, padx=5, columnspan=3)
+tk.Label(bottom_frame, text="Narration", bg="lightpink", font=("Times", 15)).grid(row=0, column=2, padx=5, sticky="w")
+narration_entry = tk.Entry(bottom_frame, width=30, justify="center", font=("Times",14), bd=4)
+narration_entry.grid(row=1, column=2, padx=5, columnspan=3, sticky="w")
+narration_entry.bind("<Return>", focus_next_widget)
+
 
 # Treeview Frame for Displaying Items
 tree_frame = tk.Frame(root, bg="lightpink")
 tree_frame.pack(pady=10, fill="both", expand=True)
 
+# Define the columns
 columns = ("#1", "#2", "#3", "#4", "#5", "#6", "#7", "#8", "#9", "#10", "#11", "#12", "#13", "#14", "#15")
+
+# Create the Treeview widget with fixed height and width
 tree = ttk.Treeview(tree_frame, columns=columns, show="headings", height=10)
 
+# Set headings for each column
 tree.heading("#1", text="SLNo")
 tree.heading("#2", text="Date")
 tree.heading("#3", text="Name")
@@ -469,6 +520,7 @@ tree.heading("#13", text="Rate")
 tree.heading("#14", text="Amount")
 tree.heading("#15", text="Narration")
 
+# Set column width and alignment
 tree.column("#1", width=30, anchor=tk.CENTER)
 tree.column("#2", width=50, anchor=tk.CENTER)
 tree.column("#3", width=150, anchor=tk.W)
@@ -485,7 +537,21 @@ tree.column("#13", width=80, anchor=tk.CENTER)
 tree.column("#14", width=100, anchor=tk.CENTER)
 tree.column("#15", width=200, anchor=tk.W)
 
+# Create scrollbars
+x_scrollbar = tk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
+y_scrollbar = tk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
+
+# Link the scrollbars to the treeview
+tree.configure(xscrollcommand=x_scrollbar.set, yscrollcommand=y_scrollbar.set)
+
+# Pack the scrollbars and treeview
 tree.pack(fill="both", expand=True)
+x_scrollbar.pack(fill="x", side="bottom")
+y_scrollbar.pack(fill="y", side="right")
+
+# Example of inserting data into the Treeview
+tree.insert("", "end", values=("1", "01-01-2024", "John Doe", "Gold", "Ring", "Sales", "100", "5", "10", "95", "5", "4", "1500", "15000", "Test"))
+
 
 # Footer Frame - Buttons
 footer_frame = tk.Frame(root, bg="lightpink")
